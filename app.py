@@ -1,8 +1,25 @@
 import cv2
 import tkinter as tk
 from PIL import Image, ImageTk
+from PIL import Image, ImageDraw, ImageFont
+import geocoder
+import requests
 
-# Function to capture photo
+def get_location_info(lat, lng):
+    api_key = '3d95a7ba9fe8491586f4668a1a3a3783'
+    url = f'https://api.opencagedata.com/geocode/v1/json?q={lat}+{lng}&key={api_key}'
+    response = requests.get(url).json()
+    if response['total_results'] > 0:
+        location = response['results'][0]['formatted']
+        components = response['results'][0]['components']
+        city = components.get('city', '')
+        state = components.get('state', '')
+        country = components.get('country', '')
+        address = components.get('road', '') + ' ' + components.get('house_number', '')
+        return f"{location}, \n{city}, \n{state}, \n{country}, \n{address}"
+    else:
+        return 'location not loaded perfectly'
+
 def capture_photo():
     # Capture a frame from the camera
     ret, frame = cap.read()
@@ -12,18 +29,48 @@ def capture_photo():
         print("Failed to capture frame")
         return
 
+    # Get the current location
+    g = geocoder.ip('me')
+    location_info = get_location_info(g.lat, g.lng)
+
     # Specify the path and filename to save the photo
     save_path = './photos/photo.jpg'
 
-    # Save the captured frame as an image
-    cv2.imwrite(save_path, frame)
+    # Open the watermark image
+    watermark = Image.open('watermark.png')
+
+    # Resize the watermark to 25% of the size of the captured image
+    width, height = frame.shape[1], frame.shape[0]
+    watermark_width = int(width * 0.25)
+    watermark_height = int(watermark_width * watermark.size[1] / watermark.size[0])
+    watermark = watermark.resize((watermark_width, watermark_height), resample=Image.LANCZOS)
+
+    # Convert the captured frame to PIL Image
+    img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+    # Blend the watermark with the captured image
+    x = img.width - watermark.width - 10
+    y = 10
+    img.paste(watermark, (x, y), mask=watermark)
+
+    # Add location overlay
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype('arial.ttf', 12)
+    text_width, text_height = draw.textsize(location_info, font=font)
+    x = int(width * 0.02)
+    y = int(height * 0.824)
+    draw.rectangle((x, y, x + text_width + 8, y + text_height + 8), fill=(255, 255, 255, 80))
+    draw.text((x + 5, y + 5), location_info, fill=(0, 0, 0), font=font)
+
+    # Save the image with watermark and location overlay
+    img.save(save_path)
 
     # Print success message
     print(f"Photo saved as {save_path}")
 
     # Open the saved photo using Pillow
-    img = Image.open(save_path)
     img.show()
+
 
 # Function to create the GUI window
 def create_window():
