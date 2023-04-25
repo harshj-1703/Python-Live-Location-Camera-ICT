@@ -49,7 +49,7 @@ def capture_photo():
 
     # Resize the watermark to 25% of the size of the captured image
     width1, height1 = frame.shape[1], frame.shape[0]
-    watermark_width1 = int(width1 * 0.15)
+    watermark_width1 = int(width1 * 0.12)
     watermark_height1 = int(watermark_width1 * watermark1.size[1] / watermark1.size[0])
     watermark1 = watermark1.resize((watermark_width1, watermark_height1), resample=Image.LANCZOS)
 
