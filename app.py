@@ -45,6 +45,14 @@ def capture_photo():
     watermark_height = int(watermark_width * watermark.size[1] / watermark.size[0])
     watermark = watermark.resize((watermark_width, watermark_height), resample=Image.LANCZOS)
 
+    watermark1 = Image.open('watermark1.png')
+
+    # Resize the watermark to 25% of the size of the captured image
+    width1, height1 = frame.shape[1], frame.shape[0]
+    watermark_width1 = int(width1 * 0.15)
+    watermark_height1 = int(watermark_width1 * watermark1.size[1] / watermark1.size[0])
+    watermark1 = watermark1.resize((watermark_width1, watermark_height1), resample=Image.LANCZOS)
+
     # Convert the captured frame to PIL Image
     img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
@@ -52,6 +60,11 @@ def capture_photo():
     x = img.width - watermark.width - 10
     y = 10
     img.paste(watermark, (x, y), mask=watermark)
+
+    # Blend the watermark with the captured image
+    x = 10
+    y = 10
+    img.paste(watermark1, (x, y), mask=watermark1)
 
     # Add location overlay
     draw = ImageDraw.Draw(img)
